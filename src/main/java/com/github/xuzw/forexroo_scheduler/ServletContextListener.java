@@ -24,6 +24,7 @@ public class ServletContextListener implements javax.servlet.ServletContextListe
     public void contextInitialized(ServletContextEvent sce) {
         log.info("contextInitialized");
         try {
+            Druid.init();
             Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
             scheduler.scheduleJob(JobBuilder.newJob(MasterTraderDailyClearing.class).build(), TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(0, 1)).build());
             scheduler.start();

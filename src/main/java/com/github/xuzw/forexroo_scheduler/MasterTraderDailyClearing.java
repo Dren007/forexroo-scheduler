@@ -34,19 +34,16 @@ public class MasterTraderDailyClearing implements Job {
             DSLContext db = DSL.using(Jooq.buildConfiguration());
             Condition orderCondition = MT4_HISTORY_ORDER.CLOSE_TIME.gt(0L);
             YyyyMmDd today = YyyyMmDd.today();
-            Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(today.firstMillsecond());
-            Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(today.lastMillsecond());
+            Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(today.firstMillsecond() / 1000);
+            Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(today.lastMillsecond() / 1000);
             Condition finalCondition = Jooq.and(orderCondition, dateStartCondition, dateEndCondition);
             List<Field<?>> fields = new ArrayList<>();
             fields.add(USER.ID.as("userId"));
             fields.add(MT4_HISTORY_ORDER.LOGIN);
             fields.add(DSL.choose().when(MT4_HISTORY_ORDER.PROFIT.gt(0.0), 1).otherwise(0).sum().as("profitCount"));
             fields.add(DSL.count().as("orderCount"));
-            Field<?> totalProfitField = DSL.sum(MT4_HISTORY_ORDER.PROFIT).as("totalProfit");
-            fields.add(totalProfitField);
-            List<MasterTraderDailyClearingRecord> rows = new ArrayList<>();
-            rows.addAll(db.select().from(MT4_HISTORY_ORDER).leftJoin(USER).on(MT4_HISTORY_ORDER.LOGIN.eq(USER.MT4_REAL_ACCOUNT)).where(finalCondition).groupBy(MT4_HISTORY_ORDER.LOGIN).orderBy(totalProfitField.asc()).limit(0, 10).fetchInto(MasterTraderDailyClearingRecord.class));
-            rows.addAll(db.select().from(MT4_HISTORY_ORDER).leftJoin(USER).on(MT4_HISTORY_ORDER.LOGIN.eq(USER.MT4_REAL_ACCOUNT)).where(finalCondition).groupBy(MT4_HISTORY_ORDER.LOGIN).orderBy(totalProfitField.desc()).limit(0, 10).fetchInto(MasterTraderDailyClearingRecord.class));
+            fields.add(DSL.sum(MT4_HISTORY_ORDER.PROFIT).as("totalProfit"));
+            List<MasterTraderDailyClearingRecord> rows = db.select(fields).from(MT4_HISTORY_ORDER).leftJoin(USER).on(MT4_HISTORY_ORDER.LOGIN.eq(USER.MT4_REAL_ACCOUNT)).where(finalCondition).groupBy(MT4_HISTORY_ORDER.LOGIN).orderBy(DSL.sum(MT4_HISTORY_ORDER.PROFIT).desc()).limit(0, 10).fetchInto(MasterTraderDailyClearingRecord.class);
             MasterTraderRankingsHistoryDao masterTraderRankingsHistoryDao = new MasterTraderRankingsHistoryDao(Jooq.buildConfiguration());
             for (MasterTraderDailyClearingRecord x : rows) {
                 MasterTraderRankingsHistory object = new MasterTraderRankingsHistory();

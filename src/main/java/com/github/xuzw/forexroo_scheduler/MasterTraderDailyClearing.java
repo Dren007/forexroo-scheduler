@@ -33,9 +33,9 @@ public class MasterTraderDailyClearing implements Job {
         try {
             DSLContext db = DSL.using(Jooq.buildConfiguration());
             Condition orderCondition = MT4_HISTORY_ORDER.CLOSE_TIME.gt(0L);
-            YyyyMmDd today = YyyyMmDd.today();
-            Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(today.firstMillsecond() / 1000);
-            Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(today.lastMillsecond() / 1000);
+            YyyyMmDd yesterday = YyyyMmDd.yesterday();
+            Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(yesterday.firstMillsecond() / 1000);
+            Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(yesterday.lastMillsecond() / 1000);
             Condition finalCondition = Jooq.and(orderCondition, dateStartCondition, dateEndCondition);
             List<Field<?>> fields = new ArrayList<>();
             fields.add(USER.ID.as("userId"));
@@ -54,7 +54,7 @@ public class MasterTraderDailyClearing implements Job {
                 NumberFormat nt = NumberFormat.getPercentInstance();
                 nt.setMinimumFractionDigits(2);
                 object.setSuccessRate(nt.format(x.getProfitCount() * 1.0 / x.getOrderCount()));
-                object.setTime(today.format("yyyy-MM-dd"));
+                object.setTime(yesterday.format("yyyy-MM-dd"));
                 masterTraderRankingsHistoryDao.insert(object);
             }
         } catch (Exception e) {

@@ -49,12 +49,14 @@ public class MasterTraderDailyClearing implements Job {
                 MasterTraderRankingsHistory object = new MasterTraderRankingsHistory();
                 object.setUserId(x.getUserId());
                 object.setMt4RealAccount(x.getLogin());
-                object.setTotalProfit(String.valueOf(x.getTotalProfit()));
-                object.setSingleProfit(String.valueOf(x.getTotalProfit() / x.getOrderCount()));
+                object.setTotalProfit(x.getTotalProfit());
+                object.setSingleProfit(x.getTotalProfit() / x.getOrderCount());
                 NumberFormat nt = NumberFormat.getPercentInstance();
                 nt.setMinimumFractionDigits(2);
-                object.setSuccessRate(nt.format(x.getProfitCount() * 1.0 / x.getOrderCount()));
+                object.setSuccessRate(Double.valueOf(nt.format(x.getProfitCount() * 1.0 / x.getOrderCount()).replaceFirst("%", "")));
                 object.setTime(yesterday.format("yyyy-MM-dd"));
+                object.setCreateTime(System.currentTimeMillis());
+                object.setCreator(JvmUtils.getPid() + "@" + JvmUtils.getIp());
                 masterTraderRankingsHistoryDao.insert(object);
             }
         } catch (Exception e) {

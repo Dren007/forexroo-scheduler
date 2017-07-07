@@ -43,7 +43,7 @@ public class MasterTraderDailyClearing implements Job {
             fields.add(DSL.choose().when(MT4_HISTORY_ORDER.PROFIT.gt(0.0), 1).otherwise(0).sum().as("profitCount"));
             fields.add(DSL.count().as("orderCount"));
             fields.add(DSL.sum(MT4_HISTORY_ORDER.PROFIT).as("totalProfit"));
-            List<MasterTraderDailyClearingRecord> rows = db.select(fields).from(MT4_HISTORY_ORDER).leftJoin(USER).on(MT4_HISTORY_ORDER.LOGIN.eq(USER.MT4_REAL_ACCOUNT)).where(finalCondition).groupBy(MT4_HISTORY_ORDER.LOGIN).orderBy(DSL.sum(MT4_HISTORY_ORDER.PROFIT).desc()).limit(0, 10).fetchInto(MasterTraderDailyClearingRecord.class);
+            List<MasterTraderDailyClearingRecord> rows = db.select(fields).from(MT4_HISTORY_ORDER).leftJoin(USER).on(MT4_HISTORY_ORDER.LOGIN.eq(USER.MT4_REAL_ACCOUNT)).where(finalCondition).groupBy(MT4_HISTORY_ORDER.LOGIN).orderBy(DSL.sum(MT4_HISTORY_ORDER.PROFIT).desc()).fetchInto(MasterTraderDailyClearingRecord.class);
             MasterTraderRankingsHistoryDao masterTraderRankingsHistoryDao = new MasterTraderRankingsHistoryDao(Jooq.buildConfiguration());
             for (MasterTraderDailyClearingRecord x : rows) {
                 MasterTraderRankingsHistory object = new MasterTraderRankingsHistory();

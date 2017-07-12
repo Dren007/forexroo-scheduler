@@ -82,7 +82,7 @@ public class CommissionDailyClearing implements Job {
                     DepositAndWithdrawTypeEnum type = DepositAndWithdrawTypeEnum.commission_deposit;
                     JSONObject mt4Request = new JSONObject();
                     mt4Request.put("login", myBroker.getMt4RealAccount());
-                    mt4Request.put("operationtype", type.getValue());
+                    mt4Request.put("operationtype", 1); // 1:表示入金 2:表示出金
                     mt4Request.put("amount", amount);
                     DepositAndWithdraw entity = new DepositAndWithdraw();
                     entity.setUserId(myBrokerId);

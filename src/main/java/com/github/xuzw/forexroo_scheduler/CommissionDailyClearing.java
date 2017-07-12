@@ -35,11 +35,12 @@ public class CommissionDailyClearing implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         log.info("execute");
         try {
+            Condition symbolTypeCondition = MT4_HISTORY_ORDER.SYMBOL_TYPE.isNotNull();
             Condition orderCondition = MT4_HISTORY_ORDER.CLOSE_TIME.gt(0L);
             YyyyMmDd yesterday = YyyyMmDd.yesterday();
             Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(yesterday.firstMillsecond() / 1000);
             Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(yesterday.lastMillsecond() / 1000);
-            Condition finalCondition = Jooq.and(orderCondition, dateStartCondition, dateEndCondition);
+            Condition finalCondition = Jooq.and(symbolTypeCondition, orderCondition, dateStartCondition, dateEndCondition);
             List<Field<?>> fields = new ArrayList<>();
             fields.add(USER.ID.as("userId"));
             fields.add(MT4_HISTORY_ORDER.LOGIN);

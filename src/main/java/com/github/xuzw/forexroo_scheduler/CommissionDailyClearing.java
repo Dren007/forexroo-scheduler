@@ -22,8 +22,10 @@ import com.github.xuzw.activemq_utils.ActiveMq;
 import com.github.xuzw.commons.YyyyMmDd;
 import com.github.xuzw.forexroo.entity.tables.daos.BrokerCommissionSettingsDao;
 import com.github.xuzw.forexroo.entity.tables.daos.DepositAndWithdrawDao;
+import com.github.xuzw.forexroo.entity.tables.daos.UserDao;
 import com.github.xuzw.forexroo.entity.tables.pojos.BrokerCommissionSettings;
 import com.github.xuzw.forexroo.entity.tables.pojos.DepositAndWithdraw;
+import com.github.xuzw.forexroo.entity.tables.pojos.User;
 
 /**
  * @author 徐泽威 xuzewei_2012@126.com
@@ -38,13 +40,13 @@ public class CommissionDailyClearing implements Job {
         try {
             Condition symbolTypeCondition = MT4_HISTORY_ORDER.SYMBOL_TYPE.isNotNull();
             Condition orderCondition = MT4_HISTORY_ORDER.CLOSE_TIME.gt(0L);
-            YyyyMmDd yesterday = YyyyMmDd.now();
+            YyyyMmDd yesterday = YyyyMmDd.now().yesterday();
             Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(yesterday.firstMillsecond() / 1000);
             Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(yesterday.lastMillsecond() / 1000);
             Condition finalCondition = Jooq.and(symbolTypeCondition, orderCondition, dateStartCondition, dateEndCondition);
             List<Field<?>> fields = new ArrayList<>();
             fields.add(USER.ID.as("userId"));
-            fields.add(MT4_HISTORY_ORDER.LOGIN);
+            fields.add(USER.MY_BROKER_ID);
             fields.add(MT4_HISTORY_ORDER.SYMBOL_TYPE);
             fields.add(DSL.sum(MT4_HISTORY_ORDER.VOLUME).as("volume"));
             DSLContext db = DSL.using(Jooq.buildConfiguration());
@@ -52,11 +54,16 @@ public class CommissionDailyClearing implements Job {
             DepositAndWithdrawDao depositAndWithdrawDao = new DepositAndWithdrawDao(Jooq.buildConfiguration());
             BrokerCommissionSettingsDao brokerCommissionSettingsDao = new BrokerCommissionSettingsDao(Jooq.buildConfiguration());
             BrokerCommissionSettings globalSettings = brokerCommissionSettingsDao.fetchOneByBrokerId(0L);
+            UserDao userDao = new UserDao(Jooq.buildConfiguration());
             for (CommissionDailyClearingRecord x : rows) {
-                Long userId = x.getUserId();
+                Long myBrokerId = x.getMyBrokerId();
+                if (myBrokerId == null || myBrokerId == 0) {
+                    continue;
+                }
+                User myBroker = userDao.fetchOneById(myBrokerId);
                 try {
                     double commissionPerVolume = 0;
-                    BrokerCommissionSettings privateSettings = brokerCommissionSettingsDao.fetchOneByBrokerId(userId);
+                    BrokerCommissionSettings privateSettings = brokerCommissionSettingsDao.fetchOneByBrokerId(myBrokerId);
                     switch (x.getSymbolType()) {
                     case "cfd":
                         commissionPerVolume = (privateSettings != null && privateSettings.getAmountCfd() != null) ? privateSettings.getAmountCfd() : globalSettings.getAmountCfd();
@@ -74,11 +81,11 @@ public class CommissionDailyClearing implements Job {
                     double amount = commissionPerVolume * x.getVolume();
                     DepositAndWithdrawTypeEnum type = DepositAndWithdrawTypeEnum.commission_deposit;
                     JSONObject mt4Request = new JSONObject();
-                    mt4Request.put("login", x.getLogin());
+                    mt4Request.put("login", myBroker.getMt4RealAccount());
                     mt4Request.put("operationtype", type.getValue());
                     mt4Request.put("amount", amount);
                     DepositAndWithdraw entity = new DepositAndWithdraw();
-                    entity.setUserId(userId);
+                    entity.setUserId(myBrokerId);
                     entity.setType(type.getValue());
                     entity.setAmount(String.valueOf(amount));
                     entity.setMt4RawRequest(mt4Request.toJSONString());
@@ -90,7 +97,7 @@ public class CommissionDailyClearing implements Job {
                     entity.setOrderId(orderId);
                     boolean success = StringUtils.isNotBlank(orderId);
                     if (!success) {
-                        throw new Exception(String.format("mt4_middleware_error, userId=%s, message=%s", userId, mt4Response.getString("error")));
+                        throw new Exception(String.format("mt4_middleware_error, userId=%s, myBrokerId=%s, message=%s", x.getUserId(), myBrokerId, mt4Response.getString("error")));
                     }
                     entity.setTime(System.currentTimeMillis());
                     depositAndWithdrawDao.insert(entity);
@@ -105,7 +112,7 @@ public class CommissionDailyClearing implements Job {
 
     public static class CommissionDailyClearingRecord {
         private Long userId;
-        private Integer login;
+        private Long myBrokerId;
         private String symbolType;
         private Integer volume;
 
@@ -117,12 +124,12 @@ public class CommissionDailyClearing implements Job {
             this.userId = userId;
         }
 
-        public Integer getLogin() {
-            return login;
+        public Long getMyBrokerId() {
+            return myBrokerId;
         }
 
-        public void setLogin(Integer login) {
-            this.login = login;
+        public void setMyBrokerId(Long myBrokerId) {
+            this.myBrokerId = myBrokerId;
         }
 
         public String getSymbolType() {

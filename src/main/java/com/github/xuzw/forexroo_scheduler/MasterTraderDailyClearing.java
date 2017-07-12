@@ -17,6 +17,7 @@ import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.xuzw.commons.YyyyMmDd;
 import com.github.xuzw.forexroo.entity.tables.daos.MasterTraderRankingsHistoryDao;
 import com.github.xuzw.forexroo.entity.tables.pojos.MasterTraderRankingsHistory;
 
@@ -33,7 +34,7 @@ public class MasterTraderDailyClearing implements Job {
         try {
             DSLContext db = DSL.using(Jooq.buildConfiguration());
             Condition orderCondition = MT4_HISTORY_ORDER.CLOSE_TIME.gt(0L);
-            YyyyMmDd yesterday = YyyyMmDd.yesterday();
+            YyyyMmDd yesterday = YyyyMmDd.now().yesterday();
             Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(yesterday.firstMillsecond() / 1000);
             Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(yesterday.lastMillsecond() / 1000);
             Condition finalCondition = Jooq.and(orderCondition, dateStartCondition, dateEndCondition);

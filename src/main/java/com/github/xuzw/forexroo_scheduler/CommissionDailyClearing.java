@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSONObject;
 import com.github.xuzw.activemq_utils.ActiveMq;
+import com.github.xuzw.commons.YyyyMmDd;
 import com.github.xuzw.forexroo.entity.tables.daos.BrokerCommissionSettingsDao;
 import com.github.xuzw.forexroo.entity.tables.daos.DepositAndWithdrawDao;
 import com.github.xuzw.forexroo.entity.tables.pojos.BrokerCommissionSettings;
@@ -37,7 +38,7 @@ public class CommissionDailyClearing implements Job {
         try {
             Condition symbolTypeCondition = MT4_HISTORY_ORDER.SYMBOL_TYPE.isNotNull();
             Condition orderCondition = MT4_HISTORY_ORDER.CLOSE_TIME.gt(0L);
-            YyyyMmDd yesterday = YyyyMmDd.yesterday();
+            YyyyMmDd yesterday = YyyyMmDd.now();
             Condition dateStartCondition = MT4_HISTORY_ORDER.CLOSE_TIME.ge(yesterday.firstMillsecond() / 1000);
             Condition dateEndCondition = MT4_HISTORY_ORDER.CLOSE_TIME.le(yesterday.lastMillsecond() / 1000);
             Condition finalCondition = Jooq.and(symbolTypeCondition, orderCondition, dateStartCondition, dateEndCondition);

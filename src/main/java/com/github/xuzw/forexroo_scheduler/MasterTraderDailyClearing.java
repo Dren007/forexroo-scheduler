@@ -11,9 +11,6 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,11 +22,11 @@ import com.github.xuzw.forexroo.entity.tables.pojos.MasterTraderRankingsHistory;
  * @author 徐泽威 xuzewei_2012@126.com
  * @time 2017年6月27日 下午2:24:00
  */
-public class MasterTraderDailyClearing implements Job {
+public class MasterTraderDailyClearing implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(MasterTraderDailyClearing.class);
 
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
+    public void run() {
         log.info("execute");
         try {
             DSLContext db = DSL.using(Jooq.buildConfiguration());

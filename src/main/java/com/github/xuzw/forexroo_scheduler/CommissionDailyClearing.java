@@ -11,9 +11,6 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +28,11 @@ import com.github.xuzw.forexroo.entity.tables.pojos.User;
  * @author 徐泽威 xuzewei_2012@126.com
  * @time 2017年7月12日 上午10:08:38
  */
-public class CommissionDailyClearing implements Job {
+public class CommissionDailyClearing implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(CommissionDailyClearing.class);
 
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
+    public void run() {
         log.info("execute");
         try {
             Condition symbolTypeCondition = MT4_HISTORY_ORDER.SYMBOL_TYPE.isNotNull();
